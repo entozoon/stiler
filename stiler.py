@@ -177,13 +177,19 @@ def move_window(windowid,PosX,PosY,Width,Height):
 
 def raise_window(windowid):
     if windowid == ":ACTIVE:":
-        command = "wmctrl -a :ACTIVE: "
+        command = "wmctrl -r :ACTIVE: -b remove,shaded && wmctrl -a :ACTIVE: "
     else:
         command - "wmctrl -i -a " + windowid
     
     os.system(command)
 
-
+def min_window(windowid):
+    if windowid == ":ACTIVE:":
+        command = "wmctrl -r :ACTIVE: -b add,shaded"
+    else:
+        command = "wmctrl -i -r " + windowid + " -b add,shaded"
+    os.system(command)
+    
 def left():
     Width=MaxWidth/2-1
     Height=MaxHeight - WinTitle -WinBorder
@@ -279,6 +285,11 @@ def maximize():
     move_active(PosX,PosY,Width,Height)
     raise_window(":ACTIVE:")
 
+def minimize():
+    winlist = create_win_list()
+    active = get_active_window()
+    min_window(active)
+
 def max_all():
     winlist = create_win_list()
     active = get_active_window()
@@ -304,6 +315,7 @@ elif sys.argv[1] == "cycle":
     cycle()
 elif sys.argv[1] == "maximize":
     maximize()
+elif sys.argv[1] == "minimize":
+    minimize()
 elif sys.argv[1] == "max_all":
     max_all()
-
