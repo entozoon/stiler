@@ -45,7 +45,6 @@ def initialize():
     desk_list = [line.split()[0] for line in desk_output]
 
     current =  filter(lambda x: x.split()[1] == "*" , desk_output)[0].split()
-    print(current)
     desktop = current[0]
     width =  current[8].split("x")[0]
     height =  current[8].split("x")[1]
