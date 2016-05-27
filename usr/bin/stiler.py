@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+#                            MYKEMOD FOR DAYZ
 ############################################################################
 # Copyright (c) 2009   unohu <unohu0@gmail.com>                            #
 #                                                                          #
@@ -22,12 +22,13 @@ import os
 import commands
 import pickle
 import ConfigParser
+import subprocess
 
 def initconfig():
     rcfile=os.getenv('HOME')+"/.stilerrc"
     if not os.path.exists(rcfile):
         cfg=open(rcfile,'w')
-        cfg.write("""#Tweak these values 
+        cfg.write("""#Tweak these values
 [default]
 BottomPadding = 0
 TopPadding = 0
@@ -68,7 +69,7 @@ def initialize():
 
 def get_active_window():
     return str(hex(int(commands.getoutput("xdotool getactivewindow 2>/dev/null").split()[0])))
-    
+
 
 def store(object,file):
     with open(file, 'w') as f:
@@ -103,13 +104,13 @@ TempFile = Config.get("default","TempFile")
 MaxWidth = int(MaxWidthStr) - LeftPadding - RightPadding
 MaxHeight = int(MaxHeightStr) - TopPadding - BottomPadding
 OrigX = int(OrigXstr) + LeftPadding
-OrigY = int(OrigYstr) + TopPadding 
+OrigY = int(OrigYstr) + TopPadding
 OldWinList = retrieve(TempFile)
 
 
 def get_simple_tile(wincount):
     rows = wincount - 1
-    layout = [] 
+    layout = []
     if rows == 0:
         layout.append((OrigX,OrigY,MaxWidth,MaxHeight-WinTitle-WinBorder))
         return layout
@@ -119,7 +120,7 @@ def get_simple_tile(wincount):
     x=OrigX + int((MaxWidth*MwFactor)+(2*WinBorder))
     width=int((MaxWidth*(1-MwFactor))-2*WinBorder)
     height=int(MaxHeight/rows - WinTitle-WinBorder)
-    
+
     for n in range(0,rows):
         y= OrigY+int((MaxHeight/rows)*(n))
         layout.append((x,y,width,height))
@@ -128,7 +129,7 @@ def get_simple_tile(wincount):
 
 
 def get_vertical_tile(wincount):
-    layout = [] 
+    layout = []
     y = OrigY
     width = int(MaxWidth/wincount)
     height = MaxHeight - WinTitle - WinBorder
@@ -140,7 +141,7 @@ def get_vertical_tile(wincount):
 
 
 def get_horiz_tile(wincount):
-    layout = [] 
+    layout = []
     x = OrigX
     height = int(MaxHeight/wincount - WinTitle - WinBorder)
     width = MaxWidth
@@ -151,15 +152,17 @@ def get_horiz_tile(wincount):
     return layout
 
 def get_max_all(wincount):
-    layout = [] 
+    layout = []
     x = OrigX
-    y = OrigY 
+    y = OrigY
     height = MaxHeight - WinTitle - WinBorder
     width = MaxWidth
     for n in range(0,wincount):
         layout.append((x,y,width,height))
 
     return layout
+
+
 
 
 
@@ -180,7 +183,7 @@ def raise_window(windowid):
         command = "wmctrl -r :ACTIVE: -b remove,shaded && wmctrl -a :ACTIVE: "
     else:
         command - "wmctrl -i -a " + windowid
-    
+
     os.system(command)
 
 def min_window(windowid):
@@ -188,8 +191,11 @@ def min_window(windowid):
         command = "wmctrl -r :ACTIVE: -b add,shaded"
     else:
         command = "wmctrl -i -r " + windowid + " -b add,shaded"
+        #command = "wmctrl -i -r " + windowid + " -b toggle,hidden" #does nothing?
+        #command = "wmctrl -i -r " + windowid + " -b add,minimized"
+        #I've thought of a better command, wmctrl -k on
     os.system(command)
-    
+
 def left():
     Width=MaxWidth/2-1
     Height=MaxHeight - WinTitle -WinBorder
@@ -201,12 +207,12 @@ def left():
 
 def right():
     Width=MaxWidth/2-1
-    Height=MaxHeight - WinTitle - WinBorder 
+    Height=MaxHeight - WinTitle - WinBorder
     PosX=MaxWidth/2
     PosY=TopPadding
     move_active(PosX,PosY,Width,Height)
     raise_window(":ACTIVE:")
-    
+
 
 def compare_win_list(newlist,oldlist):
     templist = []
@@ -214,7 +220,7 @@ def compare_win_list(newlist,oldlist):
         if newlist.count(window) != 0:
             templist.append(window)
     for window in newlist:
-        if oldlist.count(window) == 0: 
+        if oldlist.count(window) == 0:
             templist.append(window)
     return templist
 
@@ -244,7 +250,7 @@ def arrange(layout,windows):
 def simple():
     Windows = create_win_list()
     arrange(get_simple_tile(len(Windows)),Windows)
-   
+
 
 def swap():
     winlist = create_win_list()
@@ -297,6 +303,20 @@ def max_all():
     winlist.insert(0,active)
     arrange(get_max_all(len(winlist)),winlist)
 
+def min_or_max_all():
+    #winlist = create_win_list()
+    #for window in winlist:
+    #    min_window(window)
+    # thought of a way better way! ::
+    command = "wmctrl -m"
+    #result = os.system(command)
+    result = subprocess.check_output(command, shell=True)
+    #print(result)
+    if ("desktop\" mode: OFF" in result):
+        command = "wmctrl -k on" # minimize everything
+    else:
+        command = "wmctrl -k off" # maximise everything
+    os.system(command)
 
 
 if sys.argv[1] == "left":
@@ -319,3 +339,7 @@ elif sys.argv[1] == "minimize":
     minimize()
 elif sys.argv[1] == "max_all":
     max_all()
+elif sys.argv[1] == "min_or_max_all":
+    min_or_max_all()
+else:
+    print("Unknown stiler command")
