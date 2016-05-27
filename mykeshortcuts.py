@@ -1,20 +1,9 @@
 #!/usr/bin/python
-#                            MYKEMOD FOR DAYZ
+#                            MYKEMODS FOR DAYZ
 ############################################################################
-# Copyright (c) 2009   unohu <unohu0@gmail.com>                            #
-#                                                                          #
-# Permission to use, copy, modify, and/or distribute this software for any #
-# purpose with or without fee is hereby granted, provided that the above   #
-# copyright notice and this permission notice appear in all copies.        #
-#                                                                          #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES #
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF         #
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR  #
-# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES   #
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN    #
-# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF  #
-# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
-#                                                                          #
+# Based on https://github.com/nsrinath/stiler                              #
+# Which is a fork of https://github.com/TheWanderer/stiler                 #
+# And the menu opening from http://askubuntu.com/a/661766                  #
 ############################################################################
 
 import sys
@@ -23,9 +12,14 @@ import commands
 import pickle
 import ConfigParser
 import subprocess
+import time
+
+def get_mousepos():
+    cursordata = subprocess.check_output(["xdotool", "getmouselocation"]).decode("utf-8").split()
+    return [d.split(":")[1] for d in cursordata[:2]]
 
 def initconfig():
-    rcfile=os.getenv('HOME')+"/.stilerrc"
+    rcfile=os.getenv('HOME')+"/.mykeshortcutsrc"
     if not os.path.exists(rcfile):
         cfg=open(rcfile,'w')
         cfg.write("""#Tweak these values
@@ -51,12 +45,15 @@ def initialize():
     desk_list = [line.split()[0] for line in desk_output]
 
     current =  filter(lambda x: x.split()[1] == "*" , desk_output)[0].split()
-
+    print(current)
     desktop = current[0]
     width =  current[8].split("x")[0]
     height =  current[8].split("x")[1]
     orig_x =  current[7].split(",")[0]
     orig_y =  current[7].split(",")[1]
+
+    resolutionX = int(current[3].split("x")[0])
+    resolutionY = int(current[3].split("x")[1])
 
     win_output = commands.getoutput("wmctrl -lG").split("\n")
     win_list = {}
@@ -64,7 +61,7 @@ def initialize():
     for desk in desk_list:
         win_list[desk] = map(lambda y: hex(int(y.split()[0],16)) , filter(lambda x: x.split()[1] == desk, win_output ))
 
-    return (desktop,orig_x,orig_y,width,height,win_list)
+    return (desktop,orig_x,orig_y,width,height,win_list, resolutionX, resolutionY)
 
 
 def get_active_window():
@@ -100,7 +97,7 @@ WinTitle = Config.getint("default","WinTitle")
 WinBorder = Config.getint("default","WinBorder")
 MwFactor = Config.getfloat("default","MwFactor")
 TempFile = Config.get("default","TempFile")
-(Desktop,OrigXstr,OrigYstr,MaxWidthStr,MaxHeightStr,WinList) = initialize()
+(Desktop,OrigXstr,OrigYstr,MaxWidthStr,MaxHeightStr,WinList, resolutionX, resolutionY) = initialize()
 MaxWidth = int(MaxWidthStr) - LeftPadding - RightPadding
 MaxHeight = int(MaxHeightStr) - TopPadding - BottomPadding
 OrigX = int(OrigXstr) + LeftPadding
@@ -318,8 +315,22 @@ def min_or_max_all():
         command = "wmctrl -k off" # maximise everything
     os.system(command)
 
+# Menu button toggle open/close
+def menu():
+    menuButtonX = 1
+    menuButtonY = resolutionY - 1
+    coords = str(menuButtonX) + " " + str(menuButtonY)
 
-if sys.argv[1] == "left":
+    cmd1 = "xdotool mousemove "+coords
+    cmd2 = "xdotool click 1"
+    cmd3 = "xdotool mousemove "+(" ").join(get_mousepos())
+    for cmd in [cmd1, cmd2, cmd3]:
+        subprocess.Popen(["/bin/bash", "-c", cmd])
+        time.sleep(0.05)
+
+if len(sys.argv) <= 1:
+    print("You must give an argument, e.g. min_or_max_all or menu")
+elif sys.argv[1] == "left":
     left()
 elif sys.argv[1] == "right":
     right()
@@ -341,5 +352,7 @@ elif sys.argv[1] == "max_all":
     max_all()
 elif sys.argv[1] == "min_or_max_all":
     min_or_max_all()
+elif sys.argv[1] == "menu":
+    menu()
 else:
     print("Unknown stiler command")
